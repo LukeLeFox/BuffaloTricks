@@ -1,7 +1,7 @@
 # BuffaloTricks
 
 
-# Disabilitare per Sempre Pogoplug su NAS Buffalo LS-WX20
+# Disabilitare per Sempre Pogoplug su NAS Buffalo
 *(Metodo Persistente tramite BusyBox Cron Override)*
 
 ## 🔥 Obiettivo
