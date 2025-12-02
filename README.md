@@ -1,8 +1,8 @@
 # BuffaloTricks
 
 
-# Disabilitare per Sempre Pogoplug su NAS Buffalo
-*(Metodo Persistente tramite BusyBox Cron Override)*
+# Disabilitare per Sempre Pogoplug su NAS Buffalo LS-WX20
+*(Metodo Persistente tramite BusyBox Cron Override + Hardening Processi)*
 
 ## 🔥 Obiettivo
 Eliminare definitivamente:
@@ -11,6 +11,7 @@ Eliminare definitivamente:
 - il traffico DNS continuo verso i server cloud
 - i tentativi HTTPS ogni 2 secondi
 - l’impatto CPU dei demoni CloudEngines (`hbplug`, `hbwd`)
+- i processi cloud residui che tentano connessioni interne
 
 … utilizzando un metodo **persistente**, sicuro e compatibile con il firmware Buffalo che ripristina `/etc` ad ogni boot.
 
@@ -18,7 +19,7 @@ Eliminare definitivamente:
 
 ## 🧠 Perché questo metodo funziona
 
-Il firmware Buffalo:
+Il firmware Buffalo LS-WX20:
 
 - ripristina `/etc/hosts` ad ogni boot  
 - ripristina binari CloudEngines (`hbwd`, `hbplug`)  
@@ -32,21 +33,18 @@ Il firmware Buffalo:
 - `/etc/melco`  
 - `/var/spool/cron/crontabs/root`  
 
-E i cronjob di BusyBox **vengono eseguiti SEMPRE**, anche se il resto del sistema è read-only.
-
-➡️ Quindi sovrascriviamo `/etc/hosts` **ogni minuto** tramite cron.  
-➡️ Dopo ogni boot, entro 60 secondi, il file è correttamente patchato.
+➡️ Quindi usiamo **cron** sia per sovrascrivere `/etc/hosts` che per **terminare i processi Pogoplug**, rendendo il fix permanente.
 
 ---
 
-## ✅ Soluzione Permanente (testata su CS-WX)
+# ✅ Soluzione Permanente (testata su LS-WX20)
 
-### 1️⃣ Crea il file persistente `/etc/melco/hosts.custom`
+## 1️⃣ Crea il file persistente `/etc/melco/hosts.custom`
 
 ```
 cat <<'EOF' > /etc/melco/hosts.custom
 127.0.0.1 localhost.localdomain localhost
-$yournasip $yournashostname
+10.10.99.253 LIL-NAS
 
 # Block Pogoplug / CloudEngines queries
 127.0.0.1 service.pogoplug.com
@@ -62,18 +60,12 @@ $yournasip $yournashostname
 EOF
 ```
 
-Verifica:
-
-```
-cat /etc/melco/hosts.custom
-```
-
 ---
 
-### 2️⃣ Aggiungi un cronjob persistente per sovrascrivere `/etc/hosts`
+## 2️⃣ Sovrascrivi `/etc/hosts` automaticamente ogni minuto
 
 BusyBox *richiede un TAB* tra schedule e comando.  
-Per evitare l’editor `vi`, usiamo un append diretto:
+Usiamo un append diretto:
 
 ```
 printf "*/1 * * * *\tcp /etc/melco/hosts.custom /etc/hosts
@@ -86,17 +78,36 @@ Verifica:
 crontab -l
 ```
 
-Deve apparire:
+---
+
+## 3️⃣ **Kill dei processi Pogoplug** (fix aggiuntivo consigliato)
+
+I servizi cloud Buffalo (`hbplug`, `hbwd`) continueranno a ripartire dopo il boot.  
+Dato che il cloud non esiste più, possiamo terminarli ciclicamente.
+
+Aggiungiamo una seconda entry cron:
 
 ```
-*/1 * * * *    cp /etc/melco/hosts.custom /etc/hosts
+printf "*/1 * * * *\tkillall hbplug hbplug_buffalo hbwd 2>/dev/null
+" >> /var/spool/cron/crontabs/root
 ```
 
-(Il TAB può sembrare invisibile)
+Effetti:
+
+- nessun processo Pogoplug attivo
+- niente loop interni
+- niente log superflui
+- NAS più silenzioso
+
+Verifica:
+
+```
+crontab -l
+```
 
 ---
 
-### 3️⃣ Riavvia cron
+## 4️⃣ Riavvia cron
 
 ```
 killall crond
@@ -111,7 +122,7 @@ Oppure:
 
 ---
 
-### 4️⃣ Riavvia il NAS
+## 5️⃣ Riavvia il NAS
 
 ```
 reboot
@@ -119,52 +130,49 @@ reboot
 
 ---
 
-### 5️⃣ Dopo 60 secondi dal boot: verifica
+## 6️⃣ Dopo 60 secondi: verifica
+
+### Hosts:
 
 ```
 cat /etc/hosts
 ```
 
-Se il fix è attivo, vedrai:
+Deve mostrare le entry Pogoplug bloccate.
+
+### Processi Pogoplug:
 
 ```
-127.0.0.1 localhost.localdomain localhost
-$yournasip $yournashostname
-127.0.0.1 service.pogoplug.com
-…
+ps | grep hb
 ```
+
+Non deve apparire nessuno dei processi:
+
+- hbplug  
+- hbplug_buffalo  
+- hbwd  
 
 ---
 
-## 🎉 Risultato
+# 🎉 Risultato
 
 - 🔇 Nessun traffico DNS verso Pogoplug  
 - 💨 Nessun tentativo HTTPS verso i vecchi server cloud  
 - 🧩 Nessun timeout ripetuto nella GUI  
 - 🧘 NAS più silenzioso, stabile e leggero  
 - 🔒 Patch **persistente al 100%**  
-- ❇️ Completamente reversibile rimuovendo la riga nel crontab
+- 🚫 NESSUN processo cloud in esecuzione  
+- ❇️ Completamente reversibile rimuovendo le due righe dal crontab
 
 ---
 
-## ♻️ Disattivare la patch (opzionale)
+# ♻️ Disattivare la patch
 
-Apri il crontab:
-
-```
-crontab -e
-```
-
-Cancella la riga:
-
-```
-*/1 * * * *    cp /etc/melco/hosts.custom /etc/hosts
-```
-
-Oppure con un comando:
+### Rimuovi le righe dal crontab:
 
 ```
 sed -i '/hosts.custom/d' /var/spool/cron/crontabs/root
+sed -i '/killall hbplug/d' /var/spool/cron/crontabs/root
 ```
 
 Riavvia cron:
@@ -176,18 +184,18 @@ killall crond
 
 ---
 
-## 🧩 Note tecniche sul funzionamento
+# 🧩 Note tecniche
 
-- Buffalo *ricrea* `/etc/hosts` ad ogni boot  
-- ma `crond` parte dopo questo ripristino  
-- e legge **solo** `/var/spool/cron/crontabs/root`  
-- quindi la patch viene applicata *dopo* il reset del firmware  
-- i demoni Pogoplug (`hbplug`, `hbwd`) vedono `127.0.0.1`  
-- smettono di fare retry e la GUI non segnala più il cloud come “non raggiungibile”
+- `/etc/melco` è persistente → ideale per file custom  
+- `/var/spool/cron/crontabs/root` è persistente → entry cron sicure  
+- Cron parte dopo che Buffalo ripristina `/etc`  
+- Override e kill avvengono *dopo* il reset del firmware  
+- Il NAS resta completamente funzionante (SMB, DLNA, RAID, GUI)  
+- La parte cloud viene soppressa in modo pulito  
 
 ---
 
-## 🏆 Fix confermato su:
+# 🏆 Fix confermato su:
 
 - Buffalo LinkStation LS-WX20 (CS-WX20/R1-EU)
 - Firmware 1.13 build 2.35
@@ -196,7 +204,8 @@ killall crond
 
 ---
 
-## 📎 Autore
+# 📎 Autore
 
 Fix sviluppato e testato da **Luke** e **ChatGPT**, 2025.  
 Con assistenza tecnica, reverse-engineering e patching runtime.
+
