@@ -18,7 +18,7 @@ Eliminare definitivamente:
 
 ## 🧠 Perché questo metodo funziona
 
-Il firmware Buffalo LS-WX20:
+Il firmware Buffalo:
 
 - ripristina `/etc/hosts` ad ogni boot  
 - ripristina binari CloudEngines (`hbwd`, `hbplug`)  
@@ -39,14 +39,14 @@ E i cronjob di BusyBox **vengono eseguiti SEMPRE**, anche se il resto del sistem
 
 ---
 
-## ✅ Soluzione Permanente (testata su LS-WX20)
+## ✅ Soluzione Permanente (testata su CS-WX)
 
 ### 1️⃣ Crea il file persistente `/etc/melco/hosts.custom`
 
 ```
 cat <<'EOF' > /etc/melco/hosts.custom
 127.0.0.1 localhost.localdomain localhost
-10.10.99.253 LIL-NAS
+$yournasip $yournashostname
 
 # Block Pogoplug / CloudEngines queries
 127.0.0.1 service.pogoplug.com
@@ -129,7 +129,7 @@ Se il fix è attivo, vedrai:
 
 ```
 127.0.0.1 localhost.localdomain localhost
-10.10.99.253 LIL-NAS
+$yournasip $yournashostname
 127.0.0.1 service.pogoplug.com
 …
 ```
