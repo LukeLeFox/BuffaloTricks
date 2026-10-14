@@ -1,0 +1,21 @@
+[Unit]
+Description=Buffalo Auto Power keepalive (sostituto NAS Navigator)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/local/bin/nas-keepalive.py --mac <MAC_NAS> --ip <IP_NAS> --broadcast <BROADCAST_LAN>
+# Allo stop (spegnimento del container) il processo invia SHUTDOWN x3 ed esce
+KillSignal=SIGTERM
+TimeoutStopSec=10
+Restart=on-failure
+RestartSec=5
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
