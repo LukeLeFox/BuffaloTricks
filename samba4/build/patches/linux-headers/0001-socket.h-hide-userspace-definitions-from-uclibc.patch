@@ -1,0 +1,15 @@
+uClibc-ng 1.0.59 no longer defines __GLIBC__, so the 2.6.31 linux/socket.h
+exports sockaddr/iovec/msghdr again and clashes with the libc definitions.
+Keep that block kernel-only, as later uapi headers do.
+
+--- a/include/linux/socket.h
++++ b/include/linux/socket.h
+@@ -16,7 +16,7 @@
+ 				/* _SS_MAXSIZE value minus size of ss_family */
+ } __attribute__ ((aligned(_K_SS_ALIGNSIZE)));	/* force desired alignment */
+ 
+-#if defined(__KERNEL__) || !defined(__GLIBC__) || (__GLIBC__ < 2)
++#if defined(__KERNEL__)
+ 
+ #include <asm/socket.h>			/* arch-dependent defines	*/
+ #include <linux/sockios.h>		/* the SIOCxxx I/O controls	*/

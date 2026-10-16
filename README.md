@@ -9,6 +9,7 @@ Fix persistenti per NAS Buffalo **LinkStation LS-WX20 / CloudStation CS-WX**
 | Orologio sempre al **7 febbraio 2036** | [Orologio](#2-orologio-sempre-al-2036) — `nas/fix-time.sh` |
 | Standby / spegnimento bloccato per ore (LED che lampeggia) | [Standby bloccato](#3-standby-o-spegnimento-bloccato) — `nas/fix-clientutil-shutdown.sh` |
 | Serve una VM Windows con NAS Navigator per l'Auto Power | [Finto NAS Navigator in LXC](nas-navigator-ct/README.md) |
+| Samba 3.0.30 solo SMB1 + guest, rifiutato dai client moderni | [SMB2/SMB3 con Samba 4.23](samba4/README.md) |
 
 ---
 
@@ -52,7 +53,7 @@ viene ucciso a fine `rcS`.
 ```sh
 cat <<'EOF' > /etc/melco/hosts.custom
 127.0.0.1 localhost.localdomain localhost
-10.10.99.253 LIL-NAS
+<IP_NAS> NOME-NAS
 
 # Block Pogoplug / CloudEngines queries
 127.0.0.1 service.pogoplug.com
@@ -185,4 +186,4 @@ ssh -o KexAlgorithms=+diffie-hellman-group-exchange-sha1,diffie-hellman-group1-s
 
 ## 📎 Autori
 
-**Luke** e **ChatGPT** (2025); orologio, standby e NAS Navigator in LXC con **Claude** (2026).
+**Luke** e **ChatGPT** (2025); orologio, standby, NAS Navigator in LXC e Samba 4 con **Claude** (2026).

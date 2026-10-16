@@ -1,0 +1,49 @@
+--- a/etc/init.d/smb.sh
++++ b/etc/init.d/smb.sh
+@@ -136,6 +136,10 @@
+ start_smbd()
+ {
+ 	echo "Starting SMB services: "
++	# Samba 4 (SMB2/SMB3) se disponibile, altrimenti lo smbd stock
++	if [ -x /mnt/array1/.buffalo-samba-test/prod/smb4-start.sh ] && /mnt/array1/.buffalo-samba-test/prod/smb4-start.sh; then
++		return 0
++	fi
+ 	if [ "${SUPPORT_REPLICATION}" = "1" ] ; then
+ 		local is_rep_task=1
+ 		if [ -f /usr/local/lib/libreplication ] ; then
+@@ -230,8 +234,18 @@
+ {
+ 	echo "Shutting down SMB services: "
+ 	killall smbd
+-	return $?
+-
++	RET=$?
++	# Samba 4 (smbd, samba-dcerpcd, rpcd_*) gira dall'array:
++	# deve essere uscito prima dell'umount (standby/shutdown)
++	S4PROCS="smbd samba-dcerpcd rpcd_epmapper rpcd_classic rpcd_winreg rpcd_lsad"
++	killall $S4PROCS 2> /dev/null
++	i=0
++	while pidof $S4PROCS > /dev/null && [ $i -lt 15 ] ; do
++		sleep 1
++		i=$(($i + 1))
++	done
++	pidof $S4PROCS > /dev/null && killall -9 $S4PROCS 2> /dev/null
++	return $RET
+ }
+ 
+ stop_nmbd()
+@@ -333,8 +347,12 @@
+ {
+ 	echo -n $"Reloading smb.conf file: "
+ 	configure
+-	killall -HUP smbd
+-	RETVAL=$?
++	if [ -x /mnt/array1/.buffalo-samba-test/prod/smb4-reload.sh ] && /mnt/array1/.buffalo-samba-test/prod/smb4-reload.sh; then
++		RETVAL=0
++	else
++		killall -HUP smbd
++		RETVAL=$?
++	fi
+ 	echo
+ 	return $RETVAL
+ }

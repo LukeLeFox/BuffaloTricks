@@ -1,0 +1,17 @@
+lib/replace: build rep_copy_reflink() only when FICLONERANGE exists
+
+Kernel headers older than 4.5 (the CS-WX runs 2.6.31) have no
+struct file_clone_range / FICLONERANGE; fall back to ENOSYS.
+
+--- a/lib/replace/replace.c
++++ b/lib/replace/replace.c
+@@ -1095,7 +1095,7 @@
+ 			 int dst_fd,
+ 			 off_t dst_off,
+ 			 off_t to_copy)
+ {
+-#ifdef HAVE_LINUX_IOCTL
++#if defined(HAVE_LINUX_IOCTL) && defined(FICLONERANGE)
+ 	struct file_clone_range cr;
+ 
+ 	cr = (struct file_clone_range) {

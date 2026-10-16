@@ -1,0 +1,4 @@
+# Locally calculated after checking pgp signature (Samba Distribution Verification Key)
+# https://download.samba.org/pub/samba/stable/samba-4.23.13.tar.asc
+sha256  eb8b3a1e621aa5d817b4e7e14a6a5153f38c6f648dcb3136725a0819bda2985f  samba-4.23.13.tar.gz
+sha256  8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903  COPYING
