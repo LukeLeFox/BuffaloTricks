@@ -2,7 +2,6 @@
 R=/mnt/array1/.buffalo-samba-test
 P=$R/prod
 # binari Samba 4: v2 = build con samba-dcerpcd (loader e RPATH già puntano a v2).
-# Per tornare alla build precedente: B=$R
 B=$R/v2
 RPCDS="rpcd_epmapper rpcd_classic rpcd_winreg rpcd_lsad"
 s4() {

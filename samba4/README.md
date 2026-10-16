@@ -49,7 +49,7 @@ Il server preferisce CMAC e firma solo se il client lo pretende
 
 | Script | Cosa fa |
 |---|---|
-| [`smb4-env.sh`](nas/smb4-env.sh) | percorsi; `B=` sceglie quale build usare |
+| [`smb4-env.sh`](nas/smb4-env.sh) | percorsi; `B=` è la cartella della build (`v2`) |
 | [`smb4-genconf.sh`](nas/smb4-genconf.sh) | `global.conf` + share della `smb.conf` stock (guest → no, via `vfs audit`), nome NetBIOS e workgroup dalla web UI |
 | [`smb4-syncusers.sh`](nas/smb4-syncusers.sh) | copia utenti e hash dal passdb stock al passdb Samba 4, **fail-closed** |
 | [`smb4-start.sh`](nas/smb4-start.sh) | lock, attende che la 445 sia libera, sync, `samba-dcerpcd`, `smbd`, verifica, preriscalda i worker RPC |
@@ -120,6 +120,10 @@ $P/smb4-syncusers.sh && $P/smb4-genconf.sh
 
 Prova su una porta di test senza fermare lo stock (`smb ports = 4445`, lock/state
 in un'altra cartella) prima del passaggio: è stato fatto così.
+
+> **RAM**: sul CS-WX (128 MB) il client BitTorrent integrato occupa ~23 MB, più di
+> tutto Samba 4. Se non lo usi spegnilo dalla web UI (equivale a
+> `bittorrent_status=off` in `/etc/melco/bittorrent` + `/etc/init.d/bittorrent.sh stop`).
 
 ### 3. `smb.sh` e hook di boot
 
@@ -217,7 +221,6 @@ La uClibc risultante esporta `accept4` e `pipe2` ma non `prlimit`, `syncfs`,
 |---|---|
 | Subito allo stock (resta fino a nuovo ordine) | `touch /etc/samba/USE_STOCK && /etc/init.d/smb.sh restart` |
 | Di nuovo Samba 4 | `rm /etc/samba/USE_STOCK && /etc/init.d/smb.sh restart` |
-| Build precedente | `B=$R` in `prod/smb4-env.sh`, poi `restart` |
 | Togliere tutto | `rm /etc/rc.d/extensions.d/S97B_fix_samba4`, `cp -p /etc/melco/smb.sh.stock /etc/init.d/smb.sh`, `rm /usr/libexec/samba /usr/lib/samba`, `restart` |
 
 I client Linux montati con `vers=3.1.1` vanno riportati a `guest,vers=1.0`.
