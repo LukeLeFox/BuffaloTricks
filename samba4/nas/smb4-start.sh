@@ -80,7 +80,12 @@ while [ $i -lt 30 ]; do
                 (
                     i=0
                     while [ ! -S $P/var/run/ncalrpc/EPMAPPER ] && [ $i -lt 180 ]; do sleep 1; i=$((i + 1)); done
-                    s4 $B/usr/bin/rpcclient -s $P/smb.conf -N ncalrpc: -c srvinfo > /dev/null 2>&1
+                    # al boot il NAS è carico: si riprova finché rpcd_classic (srvsvc) non è vivo
+                    for t in 1 2 3; do
+                        s4 $B/usr/bin/rpcclient -s $P/smb.conf -N ncalrpc: -c srvinfo > /dev/null 2>&1
+                        [ -n "$(pidof rpcd_classic)" ] && break
+                        sleep 10
+                    done
                     log4 "start: worker rpcd avviati: $(pidof $RPCDS)"
                 ) < /dev/null > /dev/null 2>&1 &
             fi

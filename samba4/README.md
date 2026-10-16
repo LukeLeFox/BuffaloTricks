@@ -84,7 +84,8 @@ Per questo `smb4-start.sh` avvia `samba-dcerpcd` da sé con solo
 `rpcd_epmapper rpcd_classic rpcd_winreg rpcd_lsad`, `global.conf` imposta
 `rpc start on demand helpers = no` e `rpcd_*:idle_seconds = 31536000`
 (un anno: valori più alti superano il `time_t` a 32 bit), e dopo l'avvio un
-`rpcclient ncalrpc:` locale fa partire i worker. Risultato: primo elenco share in 0,5 s.
+`rpcclient ncalrpc:` locale fa partire i worker (riprova fino a 3 volte: al boot
+il NAS è carico). Risultato: primo elenco share in 0,4-0,5 s; senza preriscaldamento ~5-20 s.
 
 ---
 
@@ -134,7 +135,11 @@ md5sum /etc/melco/smb.sh.stock                   # deve coincidere con STOCK_MD5
 
 `fix-samba4.sh` reinstalla `smb.sh.samba4` a ogni boot **solo** se trova lo
 `smb.sh` stock con l'md5 atteso; dopo un aggiornamento firmware lascia lo stock.
-Durante il boot lo stock parte comunque per ~1-2 minuti, poi l'hook passa a Samba 4.
+
+Nei test (reboot e risveglio dallo standby) `smb.sh` modificato è rimasto al suo
+posto e Samba 4 è partito direttamente da `rcS`; il firmware ha ripristinato solo
+`clientUtil_servd.sh`. L'hook resta come rete di sicurezza: se `smb.sh` torna
+stock, per ~1-2 minuti al boot parte lo smbd stock, poi l'hook passa a Samba 4.
 
 ### Verifica
 
@@ -241,5 +246,7 @@ I client Linux montati con `vers=3.1.1` vanno riportati a `guest,vers=1.0`.
 | Dolphin, iPhone (File) | ✅ |
 | elenco share (`smbclient -L`) | ✅ |
 | `smb.sh restart` senza loop | ✅ |
-| reboot completo e risveglio Auto Power con l'hook | ⏳ da verificare |
+| reboot completo: Samba 4 v2 parte da solo, Proxmox si ricollega | ✅ |
+| standby Auto Power (CT NAS Navigator spento): smbd, samba-dcerpcd e rpcd fermati in ~4 s, array smontato | ✅ |
+| risveglio (CT riacceso): NAS di nuovo su SMB3 in ~2,5 min, elenco share e mount ok | ✅ |
 | Windows Explorer `\\NAS`, Finder | ⏳ da verificare |
