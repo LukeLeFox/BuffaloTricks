@@ -175,6 +175,14 @@ Gli utenti sono quelli della web UI. **Il guest non funziona più.**
   stock). Con NT1 come minimo la negoziazione con un server senza SMB1 fallisce
   (`NT_STATUS_INVALID_PARAMETER`) prima ancora dell'autenticazione:
   `client min protocol = SMB2_02`.
+- **Windows 11 «Il nome di rete specificato non è più disponibile» / errore 53**
+  (evento SMBClient 30816, «Parametro non valido»): anche con SMB1 disattivato
+  Windows apre la connessione con un NEGOTIATE SMB1 (`SMB 2.002`, `SMB 2.???`) per
+  passare a SMB2. Se `server smb3 signing algorithms` non contiene `HMAC-SHA256`
+  Samba scarta i dialetti 2.x e risponde `STATUS_INVALID_PARAMETER`. Per questo
+  [`global.conf`](nas/global.conf) usa `AES-128-CMAC HMAC-SHA256`: con SMB3.x il
+  server sceglie comunque CMAC. I client Linux mandano subito un NEGOTIATE SMB2 e
+  non se ne accorgono.
 - **Windows 11 24H2 e macOS** impongono la firma (~2 MB/s su questo NAS). In LAN
   di casa si può togliere l'obbligo lato client:
   - Windows (PowerShell admin): `Set-SmbClientConfiguration -RequireSecuritySignature $false`
@@ -238,6 +246,9 @@ I client Linux montati con `vers=3.1.1` vanno riportati a `guest,vers=1.0`.
   passati con il percorso completo; senza IPv6 nel kernel serve `interfaces = eth1 lo`
   + `bind interfaces only = yes`; la cartella `ncalrpc` deve essere 0755.
 - **`/etc/init.d` ripristinato al boot** → hook `fix-samba4.sh`.
+- **Windows 11 non si collegava, Linux sì**: con `server smb3 signing algorithms = AES-128-CMAC`
+  il NEGOTIATE SMB1→SMB2 di Windows riceveva `STATUS_INVALID_PARAMETER` (visto con
+  `pktmon`). → aggiunto `HMAC-SHA256` in coda alla lista.
 
 ## Stato delle verifiche
 
@@ -252,4 +263,5 @@ I client Linux montati con `vers=3.1.1` vanno riportati a `guest,vers=1.0`.
 | reboot completo: Samba 4 v2 parte da solo, Proxmox si ricollega | ✅ |
 | standby Auto Power (CT NAS Navigator spento): smbd, samba-dcerpcd e rpcd fermati in ~4 s, array smontato | ✅ |
 | risveglio (CT riacceso): NAS di nuovo su SMB3 in ~2,5 min, elenco share e mount ok | ✅ |
-| Windows Explorer `\\NAS`, Finder | ⏳ da verificare |
+| Windows 11 25H2: `net use` / unità di rete su `\\<IP_NAS>\media` | ✅ |
+| Windows Explorer `\\NAS` (elenco share), Finder | ⏳ da verificare |
